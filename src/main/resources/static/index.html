@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Minha Geladeira</title>
+    <style>
+        * {
+          box-sizing: border-box;
+          margin: 0;
+          padding: 0;
+          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+          background-color: #f9f9f9;
+          padding: 20px;
+        }
+
+        header {
+          background: #2c3e50;
+          padding: 15px 20px;
+          border-radius: 8px;
+          margin-bottom: 20px;
+          display: flex;
+          gap: 15px;
+        }
+
+        header button {
+          background: #3498db;
+          color: white;
+          border: none;
+          padding: 10px 16px;
+          border-radius: 4px;
+          cursor: pointer;
+          font-weight: bold;
+          transition: background 0.3s;
+        }
+
+        header button:hover {
+          background: #2980b9;
+        }
+
+        .form-container {
+          background: white;
+          padding: 20px;
+          border-radius: 8px;
+          margin-bottom: 20px;
+          display: none;
+        }
+
+        .form-container.visible {
+          display: block;
+        }
+
+        .form-container h2 {
+          margin-bottom: 15px;
+          color: #2c3e50;
+        }
+
+        .form-group {
+          margin-bottom: 12px;
+        }
+
+        .form-group label {
+          display: block;
+          margin-bottom: 5px;
+          font-weight: bold;
+        }
+
+        .form-group input {
+          width: 100%;
+          padding: 8px;
+          border: 1px solid #ccc;
+          border-radius: 4px;
+        }
+
+        .form-actions {
+          display: flex;
+          gap: 10px;
+          margin-top: 15px;
+        }
+
+        .form-actions button {
+          padding: 8px 16px;
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
+        }
+
+        .btn-save {
+          background: #27ae60;
+          color: white;
+        }
+
+        .btn-cancel {
+          background: #e74c3c;
+          color: white;
+        }
+
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          background: white;
+          border-radius: 8px;
+          overflow: hidden;
+          box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        th, td {
+          padding: 12px 15px;
+          text-align: left;
+          border-bottom: 1px solid #eee;
+        }
+
+        th {
+          background: #34495e;
+          color: white;
+        }
+
+        tr:hover {
+          background-color: #f5f5f5;
+        }
+
+        .actions button {
+          margin-right: 6px;
+          padding: 5px 10px;
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 12px;
+        }
+
+        .btn-edit {
+          background: #f39c12;
+          color: white;
+        }
+
+        .btn-delete {
+          background: #e74c3c;
+          color: white;
+        }
+
+        .message {
+          padding: 10px;
+          margin: 10px 0;
+          border-radius: 4px;
+          display: none;
+        }
+
+        .message.success {
+          background: #d4edda;
+          color: #155724;
+          display: block;
+        }
+
+        .message.error {
+          background: #f8d7da;
+          color: #721c24;
+          display: block;
+        }
+    </style>
+</head>
+<body>
+
+<!-- MENU SUPERIOR -->
+<header>
+    <button id="btn-new">Novo</button>
+    <button id="btn-list">Listar</button>
+</header>
+
+<!-- MENSAGENS -->
+<div id="message" class="message"></div>
+
+<!-- FORMULÁRIO -->
+<div id="form-container" class="form-container">
+    <h2 id="form-title">Adicionar Alimento</h2>
+    <input type="hidden" id="food-id" />
+    <div class="form-group">
+        <label for="food-name">Nome</label>
+        <input type="text" id="food-name" required />
+    </div>
+    <div class="form-group">
+        <label for="food-quantity">Quantidade</label>
+        <input type="number" id="food-quantity" min="0" required />
+    </div>
+    <div class="form-group">
+        <label for="food-expiration">Data de Validade</label>
+        <input type="date" id="food-expiration" required />
+    </div>
+    <div class="form-actions">
+        <button class="btn-save" id="btn-save">Salvar</button>
+        <button class="btn-cancel" id="btn-cancel">Cancelar</button>
+    </div>
+</div>
+
+<!-- LISTA DE ALIMENTOS -->
+<div id="list-container">
+    <table id="foods-table">
+        <thead>
+        <tr>
+            <th>Nome</th>
+            <th>Quantidade</th>
+            <th>Validade</th>
+            <th>Ações</th>
+        </tr>
+        </thead>
+        <tbody id="foods-body">
+        <!-- Dados carregados via JS -->
+        </tbody>
+    </table>
+</div>
+
+<script>
+    const API = '/foods';
+
+    const formContainer = document.getElementById('form-container');
+    const listContainer = document.getElementById('list-container');
+    const messageEl = document.getElementById('message');
+
+    const formTitle = document.getElementById('form-title');
+    const idEl = document.getElementById('food-id');
+    const nameEl = document.getElementById('food-name');
+    const qtyEl = document.getElementById('food-quantity');
+    const expEl = document.getElementById('food-expiration');
+
+    const state = {
+      mode: 'new',
+      editingId: null,
+      filter: 'all', // all | expired | next7
+      allFoods: [],
+    };
+
+    // Botões
+    document.getElementById('btn-new').addEventListener('click', openNew);
+    document.getElementById('btn-list').addEventListener('click', () => loadFoods());
+    document.getElementById('btn-cancel').addEventListener('click', showList);
+    document.getElementById('btn-save').addEventListener('click', (e) => {
+      e.preventDefault();
+      saveFood();
+    });
+
+    // Inicia
+    ensureFilterUI();
+    loadFoods();
+
+    function showMessage(text, type = 'success') {
+      messageEl.textContent = text;
+      messageEl.className = `message ${type}`;
+      setTimeout(() => (messageEl.className = 'message'), 4000);
+    }
+
+    function showForm() {
+      formContainer.classList.add('visible');
+      listContainer.style.display = 'none';
+    }
+
+    function showList() {
+      formContainer.classList.remove('visible');
+      listContainer.style.display = 'block';
+      resetForm();
+    }
+
+    function setModeNew() {
+      state.mode = 'new';
+      state.editingId = null;
+      formTitle.textContent = 'Adicionar Alimento';
+      idEl.value = '';
+    }
+
+    function setModeEdit(id) {
+      state.mode = 'edit';
+      state.editingId = String(id);
+      formTitle.textContent = 'Editar Alimento';
+      idEl.value = String(id);
+    }
+
+    function resetForm() {
+      nameEl.value = '';
+      qtyEl.value = '';
+      expEl.value = '';
+      setModeNew();
+    }
+
+    function openNew() {
+      resetForm();
+      showForm();
+      nameEl.focus();
+    }
+
+    async function openEdit(id) {
+      try {
+        const food = await requestJson(`${API}/${id}`);
+        setModeEdit(id);
+
+        nameEl.value = food.name ?? '';
+        qtyEl.value = food.quantity ?? '';
+        expEl.value = toISODate(food.expirationDate);
+
+        showForm();
+        nameEl.focus();
+      } catch (err) {
+        showMessage('Erro ao carregar alimento: ' + err.message, 'error');
+      }
+    }
+
+    async function loadFoods() {
+      try {
+        const foods = await requestJson(API);
+        state.allFoods = Array.isArray(foods) ? foods : [];
+        renderFromState();
+        showList();
+      } catch (err) {
+        showMessage('Falha ao carregar dados: ' + err.message, 'error');
+      }
+    }
+
+    function renderFromState() {
+      // 1) aplica filtro
+      const filtered = applyFilter(state.allFoods, state.filter);
+
+      // 2) ordena: validade asc, se empatar nome asc
+      filtered.sort((a, b) => compareFoods(a, b));
+
+      // 3) renderiza
+      renderFoods(filtered);
+
+      // 4) contador no UI do filtro
+      updateFilterCount(filtered.length, state.allFoods.length);
+    }
+
+    function renderFoods(foods) {
+      const tbody = document.getElementById('foods-body');
+      tbody.innerHTML = '';
+
+      foods.forEach((food) => {
+        const expISO = toISODate(food.expirationDate);
+        const expBR = formatBRDate(expISO);
+        const badge = buildExpiryBadge(expISO);
+
+        const days = expISO ? daysFromToday(expISO) : null;
+        const isExpired = typeof days === 'number' && days < 0;
+
+        const row = tbody.insertRow();
+
+        // ✅ destacar linha vencida
+        if (isExpired) {
+          row.style.background = '#f8d7da';
+        }
+
+        row.innerHTML = `
+          <td>${escapeHtml(food.name ?? '')}</td>
+          <td>${food.quantity ?? ''}</td>
+          <td>
+            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+              <span>${expBR || '-'}</span>
+              ${badge}
+            </div>
+          </td>
+          <td class="actions">
+            <button class="btn-edit" data-id="${food.id}">Editar</button>
+            <button class="btn-delete" data-id="${food.id}">Excluir</button>
+          </td>
+        `;
+      });
+
+      tbody.querySelectorAll('.btn-edit').forEach((btn) => {
+        btn.addEventListener('click', () => openEdit(btn.dataset.id));
+      });
+
+      tbody.querySelectorAll('.btn-delete').forEach((btn) => {
+        btn.addEventListener('click', () => deleteFood(btn.dataset.id));
+      });
+    }
+
+    async function saveFood() {
+      const food = {
+        name: nameEl.value.trim(),
+        quantity: Number(qtyEl.value),
+        expirationDate: expEl.value, // yyyy-mm-dd
+      };
+
+      if (!food.name || !qtyEl.value || !food.expirationDate) {
+        showMessage('Preencha todos os campos!', 'error');
+        return;
+      }
+      if (Number.isNaN(food.quantity) || food.quantity < 0) {
+        showMessage('Quantidade inválida!', 'error');
+        return;
+      }
+
+      try {
+        if (state.mode === 'edit' && state.editingId) {
+          await requestJson(`${API}/${state.editingId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(food),
+          });
+          showMessage('Alimento atualizado com sucesso!');
+        } else {
+          await requestJson(API, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(food),
+          });
+          showMessage('Alimento adicionado com sucesso!');
+        }
+
+        // ✅ voltar automático após salvar
+        await loadFoods();
+      } catch (err) {
+        showMessage('Erro ao salvar: ' + err.message, 'error');
+      }
+    }
+
+    async function deleteFood(id) {
+      if (!confirm('Tem certeza que deseja excluir este alimento?')) return;
+
+      try {
+        await requestJson(`${API}/${id}`, { method: 'DELETE' });
+        showMessage('Alimento excluído com sucesso!');
+        await loadFoods();
+      } catch (err) {
+        showMessage('Erro ao excluir: ' + err.message, 'error');
+      }
+    }
+
+    // ---------- Filtro UI ----------
+
+    function ensureFilterUI() {
+      // cria um bloco de filtros abaixo do header (sem mexer no HTML)
+      const header = document.querySelector('header');
+      if (!header) return;
+
+      if (document.getElementById('filter-bar')) return; // já existe
+
+      const bar = document.createElement('div');
+      bar.id = 'filter-bar';
+      bar.style.display = 'flex';
+      bar.style.alignItems = 'center';
+      bar.style.gap = '10px';
+      bar.style.flexWrap = 'wrap';
+      bar.style.margin = '10px 0 20px 0';
+
+      bar.innerHTML = `
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button id="flt-all" type="button">Todos</button>
+          <button id="flt-expired" type="button">Somente vencidos</button>
+          <button id="flt-next7" type="button">Vencem em 7 dias</button>
+        </div>
+        <div id="flt-count" style="margin-left:auto; color:#2c3e50; font-weight:700;"></div>
+      `;
+
+      // estilo dos botões igual header
+      bar.querySelectorAll('button').forEach((b) => {
+        b.style.background = '#3498db';
+        b.style.color = 'white';
+        b.style.border = 'none';
+        b.style.padding = '8px 12px';
+        b.style.borderRadius = '4px';
+        b.style.cursor = 'pointer';
+        b.style.fontWeight = 'bold';
+      });
+
+      header.insertAdjacentElement('afterend', bar);
+
+      document.getElementById('flt-all').addEventListener('click', () => setFilter('all'));
+      document.getElementById('flt-expired').addEventListener('click', () => setFilter('expired'));
+      document.getElementById('flt-next7').addEventListener('click', () => setFilter('next7'));
+
+      paintActiveFilter();
+    }
+
+    function setFilter(filter) {
+      state.filter = filter;
+      paintActiveFilter();
+      renderFromState();
+    }
+
+    function paintActiveFilter() {
+      const activeBg = '#2ecc71';
+      const normalBg = '#3498db';
+
+      const btnAll = document.getElementById('flt-all');
+      const btnExpired = document.getElementById('flt-expired');
+      const btnNext7 = document.getElementById('flt-next7');
+
+      if (!btnAll || !btnExpired || !btnNext7) return;
+
+      btnAll.style.background = state.filter === 'all' ? activeBg : normalBg;
+      btnExpired.style.background = state.filter === 'expired' ? activeBg : normalBg;
+      btnNext7.style.background = state.filter === 'next7' ? activeBg : normalBg;
+    }
+
+    function updateFilterCount(visible, total) {
+      const el = document.getElementById('flt-count');
+      if (!el) return;
+      el.textContent = `Mostrando ${visible} de ${total}`;
+    }
+
+    function applyFilter(foods, filter) {
+      if (!Array.isArray(foods)) return [];
+
+      if (filter === 'all') return [...foods];
+
+      if (filter === 'expired') {
+        return foods.filter((f) => {
+          const iso = toISODate(f.expirationDate);
+          if (!iso) return false;
+          return daysFromToday(iso) < 0;
+        });
+      }
+
+      if (filter === 'next7') {
+        return foods.filter((f) => {
+          const iso = toISODate(f.expirationDate);
+          if (!iso) return false;
+          const d = daysFromToday(iso);
+          return d >= 0 && d <= 7;
+        });
+      }
+
+      return [...foods];
+    }
+
+    // ---------- Ordenação ----------
+
+    function compareFoods(a, b) {
+      const aISO = toISODate(a?.expirationDate);
+      const bISO = toISODate(b?.expirationDate);
+
+      // sem data vai pro final
+      if (!aISO && !bISO) return compareNames(a?.name, b?.name);
+      if (!aISO) return 1;
+      if (!bISO) return -1;
+
+      const aTime = Date.parse(aISO + 'T00:00:00');
+      const bTime = Date.parse(bISO + 'T00:00:00');
+
+      if (aTime !== bTime) return aTime - bTime;
+
+      // ✅ desempate por nome
+      return compareNames(a?.name, b?.name);
+    }
+
+    function compareNames(aName, bName) {
+      const a = (aName ?? '').toString().trim().toLowerCase();
+      const b = (bName ?? '').toString().trim().toLowerCase();
+      return a.localeCompare(b, 'pt-BR');
+    }
+
+    // ---------- helpers ----------
+
+    async function requestJson(url, options = {}) {
+      const res = await fetch(url, options);
+
+      if (res.status === 204) return null;
+
+      let data = null;
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        data = await res.json();
+      } else {
+        const txt = await res.text().catch(() => '');
+        data = txt ? { message: txt } : null;
+      }
+
+      if (!res.ok) {
+        const msg =
+          data && typeof data === 'object'
+            ? Object.values(data).join(' | ') || data.message || 'Erro na requisição'
+            : 'Erro na requisição';
+        throw new Error(msg);
+      }
+
+      return data;
+    }
+
+    function toISODate(dateStr) {
+      if (!dateStr || typeof dateStr !== 'string') return '';
+      if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+      const m = dateStr.match(/^(\d{4}-\d{2}-\d{2})/);
+      return m ? m[1] : '';
+    }
+
+    function formatBRDate(iso) {
+      if (!iso) return '';
+      const [y, m, d] = iso.split('-');
+      return `${d}/${m}/${y}`;
+    }
+
+    function buildExpiryBadge(expISO) {
+      const styleBase =
+        'display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; font-weight:700;';
+
+      if (!expISO) {
+        return `<span style="${styleBase} background:#eee; color:#555;">Sem validade</span>`;
+      }
+
+      const days = daysFromToday(expISO);
+
+      if (days < 0) {
+        return `<span title="Venceu há ${Math.abs(days)} dia(s)" style="${styleBase} background:#721c24; color:#fff;">Vencido</span>`;
+      }
+      if (days === 0) {
+        return `<span title="Vence hoje" style="${styleBase} background:#fff3cd; color:#856404;">Vence hoje</span>`;
+      }
+      if (days === 1) {
+        return `<span title="Vence em 1 dia" style="${styleBase} background:#d1ecf1; color:#0c5460;">Vence em 1 dia</span>`;
+      }
+      return `<span title="Vence em ${days} dias" style="${styleBase} background:#d1ecf1; color:#0c5460;">Vence em ${days} dias</span>`;
+    }
+
+    function daysFromToday(iso) {
+      const [y, m, d] = iso.split('-').map(Number);
+
+      const today = new Date();
+      const startToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      const target = new Date(y, m - 1, d);
+
+      const diffMs = target.getTime() - startToday.getTime();
+      return Math.round(diffMs / (1000 * 60 * 60 * 24));
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+    }
+</script>
+
+
+
+
+</body>
+</html>
