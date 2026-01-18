@@ -112,6 +112,11 @@ Depois acesse no navegador:
 📌 API REST:
 👉 http://localhost:8080/foods
 
+## 📷 Screenshots
+
+![Tela Principal](screenshots/home.png)
+![Tela Cadastro](screenshots/cadastro.png)
+
 🗃️ Banco H2 (Console)
 
 O projeto usa banco em memória H2 para facilitar testes.
@@ -146,34 +151,35 @@ Ao iniciar o projeto, alguns alimentos são inseridos automaticamente no H2 via:
 📌 src/main/resources/data.sql
 
 🔥 Melhorias futuras (ideias)
-
-Página de dashboard (itens vencidos / próximos 7 dias)
-
-Campo categoria (ex: laticínios, carnes, bebidas)
-
-Notificação de vencimento
-
-Persistência com PostgreSQL/MySQL
-
-Deploy com Docker
+- Página de dashboard (itens vencidos / próximos 7 dias)
+- Campo categoria (ex: laticínios, carnes, bebidas)
+- Notificação de vencimento
+- Persistência com PostgreSQL/MySQL
+- Deploy com Docker
 
 📌 Tecnologias utilizadas
 
-Java 17+
+- Java 17+
+- Spring Boot
+- Spring Web
+- Spring Data JPA
+- H2 Database
+- Validation (Jakarta)
+- HTML + CSS + JavaScript puro
 
-Spring Boot
+## 🐳 Running with Docker
 
-Spring Web
+### Requirements
+- Docker + Docker Compose
 
-Spring Data JPA
-
-H2 Database
-
-Validation (Jakarta)
-
-HTML + CSS + JavaScript puro
-
+### Run
+```bash
+docker compose up --build
+```
+Open:
+- UI: [http://localhost:8080/index.html](http://localhost:8080/foods)
+- API: [http://localhost:8080/foods](http://localhost:8080/foods)
+---
 📄 Licença
-
 Projeto para fins de estudo / prática.
 Sinta-se livre para clonar e evoluir.
