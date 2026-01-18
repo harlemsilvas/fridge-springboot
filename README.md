@@ -16,64 +16,37 @@ Aplicação simples de gerenciamento de alimentos de uma geladeira, com CRUD com
 ✨ Funcionalidades
 📦 Backend (API REST)
 
-Listar alimentos
-
-Buscar alimento por ID
-
-Criar alimento
-
-Atualizar alimento
-
-Remover alimento
-
+- Listar alimentos
+- Buscar alimento por ID
+- Criar alimento
+- Atualizar alimento
+- Remover alimento
 Endpoints
-
-GET /foods
-
-GET /foods/{id}
-
-POST /foods
-
-PUT /foods/{id}
-
-DELETE /foods/{id}
+- GET /foods
+- GET /foods/{id}
+- POST /foods
+- PUT /foods/{id}
+- DELETE /foods/{id}
 
 🖥️ Frontend (HTML/JS)
-
-Tela de listagem em tabela
-
-Formulário com modo Novo / Editar
-
-Voltar automaticamente para a lista após salvar
-
-Reset correto do formulário
-
-Validade formatada em dd/mm/aaaa
-
+- Tela de listagem em tabela
+- Formulário com modo Novo / Editar
+- Voltar automaticamente para a lista após salvar
+- Reset correto do formulário
+- Validade formatada em dd/mm/aaaa
 Badges de status:
-
-✅ Vence em X dias
-
-⚠️ Vence hoje
-
-❌ Vencido
-
+- ✅ Vence em X dias
+- ⚠️ Vence hoje
+- ❌ Vencido
 Linha inteira destacada para itens vencidos
-
 Filtros:
-
-Todos
-
-Somente vencidos
-
-Vencem em 7 dias
-
+- Todos
+- Somente vencidos
+- Vencem em 7 dias
 Ordenação:
-
-Primeiro por validade (mais próximo vence primeiro)
-
-Empate por nome (A–Z)
-
+- Primeiro por validade (mais próximo vence primeiro)
+- Empate por nome (A–Z)
+---
 🧱 Estrutura do Projeto (principal)
 ```pgsql
 src/
@@ -99,13 +72,10 @@ src/
 ```
 🚀 Como rodar localmente
 ✅ Requisitos
-
-Java 17+
-
-Maven (ou usar o wrapper ./mvnw)
+- Java 17+
+- Maven (ou usar o wrapper ./mvnw)
 
 ▶️ Rodando o backend + frontend
-
 No terminal, dentro do projeto:
 ```bash
 ./mvnw spring-boot:run
@@ -117,7 +87,7 @@ Depois acesse no navegador:
 
 📌 API REST:
 👉 http://localhost:8080/foods
-
+---
 ## 📷 Screenshots
 
 ![Tela Principal](screenshots/home.png)
