@@ -167,5 +167,7 @@ Harlem Silvas
 GitHub: https://github.com/harlemsilvas
 ---
 📄 Licença
+
 Projeto para fins de estudo / prática.
+
 Sinta-se livre para clonar e evoluir.
